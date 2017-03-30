@@ -16,7 +16,6 @@ core
 /Make.defs
 /setenv.sh
 /setenv.bat
-/nuttx
 /nuttx.*
 /nuttx-*
 /_SAVED_APPS_config
