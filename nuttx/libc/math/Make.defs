@@ -57,7 +57,7 @@ CSRCS += lib_fmodl.c lib_frexpl.c lib_ldexpl.c lib_logl.c lib_log10l.c
 CSRCS += lib_log2l.c lib_modfl.c lib_powl.c lib_rintl.c lib_roundl.c
 CSRCS += lib_sinl.c lib_sinhl.c lib_sqrtl.c lib_tanl.c lib_tanhl.c
 CSRCS += lib_asinhl.c lib_acoshl.c lib_atanhl.c lib_erfl.c lib_copysignl.c
-CSRCS += lib_truncl.c
+CSRCS += lib_truncl.c lib_gamma.c
 
 CSRCS += lib_libexpi.c lib_libsqrtapprox.c
 CSRCS += lib_libexpif.c
