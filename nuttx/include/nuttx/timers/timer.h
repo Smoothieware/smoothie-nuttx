@@ -137,6 +137,7 @@ struct timer_notify_s
  */
 
 struct timer_lowerhalf_s;
+struct timer_dev_s;
 struct timer_ops_s
 {
   /* Required methods ********************************************************/
@@ -172,6 +173,16 @@ struct timer_ops_s
 
   CODE int (*ioctl)(FAR struct timer_lowerhalf_s *lower, int cmd,
                     unsigned long arg);
+
+  /* These functions are needed when using High Priority Timer */
+
+  CODE int (*setclock)(FAR struct timer_lowerhalf_s *lower, uint32_t freq);
+  CODE int (*setisr)(FAR struct timer_lowerhalf_s *lower,
+            int (*handler)(int irq, void *context), int source);
+  CODE void (*enableint)(FAR struct timer_lowerhalf_s *lower, int source);
+  CODE void (*disableint)(FAR struct timer_lowerhalf_s *lower, int source);
+  CODE void (*ackint)(FAR struct timer_lowerhalf_s *lower, int source);
+  CODE int  (*checkint)(FAR struct timer_lowerhalf_s *lower, int source);
 };
 
 /* This structure provides the publicly visible representation of the

@@ -128,6 +128,16 @@ static void     lpc43_setcallback(FAR struct timer_lowerhalf_s *lower,
 static int      lpc43_ioctl(FAR struct timer_lowerhalf_s *lower, int cmd,
                   unsigned long arg);
 
+static int      lpc43_setisr(FAR struct timer_lowerhalf_s *lower,
+                            int (*handler)(int irq, void *context),
+                            int source);
+static int      lpc43_setclock(FAR struct timer_lowerhalf_s *lower, uint32_t freq);
+static void     lpc43_enableint(FAR struct timer_lowerhalf_s *lower, int source);
+static void     lpc43_disableint(FAR struct timer_lowerhalf_s *lower, int source);
+static void     lpc43_ackint(FAR struct timer_lowerhalf_s *lower, int source);
+static int      lpc43_checkint(FAR struct timer_lowerhalf_s *lower, int source);
+
+
 /****************************************************************************
  * Private Data
  ****************************************************************************/
@@ -142,6 +152,12 @@ static const struct timer_ops_s g_tmrops =
   .settimeout = lpc43_settimeout,
   .setcallback = lpc43_setcallback,
   .ioctl      = lpc43_ioctl,
+  .setclock   = lpc43_setclock,
+  .setisr     = lpc43_setisr,
+  .enableint  = lpc43_enableint,
+  .disableint = lpc43_disableint,
+  .ackint     = lpc43_ackint,
+  .checkint   = lpc43_checkint,
 };
 
 /* "Lower half" driver state */
@@ -358,26 +374,18 @@ static int lpc43_interrupt(int irq, FAR void *context, FAR void *arg)
         {
           /* Calculate new ticks / dither adjustment */
 
-          priv->clkticks =((uint64_t)(priv->adjustment + priv->timeout)) *
-            TMR_FCLK / 1000000;
+          //priv->clkticks = ((uint64_t)(priv->adjustment + priv->timeout))*TMR_FCLK / 1000000;
 
-          /* Set next interval interval. TODO: make sure the interval is not
-           * so soon it will be missed!
-           */
+          /* Set next interval interval. TODO: make sure the interval is not so soon it will be missed! */
 
-          lpc43_putreg(priv->clkticks, priv->base + LPC43_TMR_PR_OFFSET);
+          //lpc43_putreg(priv->clkticks, priv->base + LPC43_TMR_PR_OFFSET);
 
-          /* Truncated timeout */
-
-          timeout = (1000000ULL * priv->clkticks) / TMR_FCLK;
-
-          /* Truncated time to be added to next interval (dither) */
-
-          priv->adjustment = (priv->adjustment + priv->timeout) - timeout;
+          //timeout = (1000000ULL * priv->clkticks) / TMR_FCLK;    /* trucated timeout */
+          //priv->adjustment = (priv->adjustment + priv->timeout) - timeout;  /* truncated time to be added to next interval (dither) */
         }
       else
         {
-          /* No callback or the callback returned false.. stop the timer */
+          /* No handler or the handler returned false.. stop the timer */
 
           lpc43_stop((FAR struct timer_lowerhalf_s *)priv);
           tmrinfo("Stopped\n");
@@ -389,6 +397,33 @@ static int lpc43_interrupt(int irq, FAR void *context, FAR void *arg)
     }
 
   return OK;
+}
+
+/****************************************************************************
+ * Name: lpc43_tmr_enable
+ *
+ * Description:
+ *   Reset and enable the timer
+ *
+ * Input Parameters:
+ *   lower - A pointer the publicly visible representation of the "lower-half"
+ *           driver state structure.
+ *
+ * Returned Values:
+ *   Zero on success; a negated errno value on failure.
+ *
+ ****************************************************************************/
+
+void lpc43_tmr_enable(FAR struct timer_lowerhalf_s *lower)
+{
+  FAR struct lpc43_lowerhalf_s *priv = (FAR struct lpc43_lowerhalf_s *)lower;
+
+  DEBUGASSERT(priv);
+
+  /* Enable the timer */
+
+  lpc43_putreg(TMR_TCR_RESET, priv->base + LPC43_TMR_TCR_OFFSET);
+  lpc43_putreg(TMR_TCR_EN, priv->base + LPC43_TMR_TCR_OFFSET);
 }
 
 /****************************************************************************
@@ -410,6 +445,7 @@ static int lpc43_start(FAR struct timer_lowerhalf_s *lower)
 {
   FAR struct lpc43_lowerhalf_s *priv = (FAR struct lpc43_lowerhalf_s *)lower;
   uint32_t presc_val;
+  uint32_t regval;
 
   tmrinfo("Entry\n");
   DEBUGASSERT(priv);
@@ -436,9 +472,11 @@ static int lpc43_start(FAR struct timer_lowerhalf_s *lower)
   presc_val = TMR_FCLK / 1000000;
   lpc43_putreg(presc_val - 1, priv->base + LPC43_TMR_PR_OFFSET);
 
-  /* Set MR0 with a large enough initial value */
+  /* Set MR0 with a timeout value */
 
-  lpc43_putreg(10000000, priv->base + LPC43_TMR_MR0_OFFSET);
+  lpc43_putreg(priv->timeout, priv->base + LPC43_TMR_MR0_OFFSET);
+
+  lpc43_putreg(0, priv->base + LPC43_TMR_CCR_OFFSET); /* do not use capture */
 
   if (priv->callback)
     {
@@ -686,6 +724,320 @@ static int lpc43_ioctl(FAR struct timer_lowerhalf_s *lower, int cmd,
 }
 
 /****************************************************************************
+ * Name: lpc43_setclock
+ *
+ * Description:
+ *   Setup new clock frequency to timer input
+ *
+ * Input Parameters:
+ *   lower - A pointer the publicly visible representation of the "lower-half"
+ *           driver state structure.
+ *
+ * Returned Values:
+ *   Zero on success; a negated errno value on failure.
+ *
+ ****************************************************************************/
+
+
+static int lpc43_setclock(FAR struct timer_lowerhalf_s *lower, uint32_t freq)
+{
+  uint64_t freqin;
+  uint32_t prescaler;
+
+  tmrinfo("Entry");
+
+  FAR struct lpc43_lowerhalf_s *priv = (FAR struct lpc43_lowerhalf_s *)lower;
+
+  DEBUGASSERT(priv != NULL);
+
+  /* Disable Timer? */
+
+  if (freq == 0)
+    {
+      //stm32_tim_disable(dev);
+      return 0;
+    }
+
+  /* Get the input clock frequency for this timer.  These vary with
+   * different timer clock sources, MCU-specific timer configuration, and
+   * board-specific clock configuration.  The correct input clock frequency
+   * must be defined in the board.h header file.
+   */
+
+  switch (priv->base)
+    {
+#ifdef CONFIG_LPC43_TMR0
+      case LPC43_TIMER0_BASE:
+        freqin = TMR_FCLK;
+        break;
+#endif
+#ifdef CONFIG_LPC43_TMR1
+      case LPC43_TIMER1_BASE:
+        freqin = TMR_FCLK;
+        break;
+#endif
+#ifdef CONFIG_LPC43_TMR2
+      case LPC43_TIMER2_BASE:
+        freqin = TMR_FCLK;
+        break;
+#endif
+#ifdef CONFIG_LPC43_TMR3
+      case LPC43_TIMER3_BASE:
+        freqin = TMR_FCLK;
+        break;
+#endif
+
+      default:
+        return -EINVAL;
+    }
+
+  /* Select a pre-scaler value for this timer using the input clock
+   * frequency.
+   */
+
+  prescaler = freqin / freq;
+
+  /* We need to decrement value for '1', but only, if that will not to
+   * cause underflow.
+   */
+
+  if (prescaler > 0)
+    {
+      prescaler--;
+    }
+
+  /* Check for overflow as well. */
+
+  if (prescaler > 0xffffffff)
+    {
+      prescaler = 0xffffffff;
+    }
+
+  /* Enable timer clock */
+
+  tmr_clk_enable(priv->tmrid);
+
+  /* Set it to Timer Mode */
+
+  lpc43_putreg(0, priv->base + LPC43_TMR_CTCR_OFFSET);
+
+  /* Disable the timer */
+
+  lpc43_putreg(0, priv->base + LPC43_TMR_TCR_OFFSET);
+
+  /* Setup prescaler */
+
+  lpc43_putreg(prescaler, priv->base + LPC43_TMR_PR_OFFSET);
+
+  return prescaler;
+
+}
+
+/****************************************************************************
+ * Name: lpc43_enableint
+ *
+ * Description:
+ *   Enable timer interrupts
+ *
+ * Input Parameters:
+ *   lower - A pointer the publicly visible representation of the "lower-half"
+ *           driver state structure.
+ *
+ * Returned Values:
+ *   Zero on success; a negated errno value on failure.
+ *
+ ****************************************************************************/
+
+static void lpc43_enableint(FAR struct timer_lowerhalf_s *lower, int source)
+{
+  uint32_t regval;
+
+  FAR struct lpc43_lowerhalf_s *priv = (FAR struct lpc43_lowerhalf_s *)lower;
+
+  DEBUGASSERT(priv != NULL);
+
+  tmrinfo("Entry");
+
+  /* Set MR0 with the timeout value */
+
+  lpc43_putreg(priv->timeout, priv->base + LPC43_TMR_MR0_OFFSET);
+
+  lpc43_putreg(0, priv->base + LPC43_TMR_CCR_OFFSET); /* do not use capture */
+
+  //if (priv->handler)
+    {
+      /* Enable Match on MR0 generate interrupt and auto-restart */
+
+      regval = lpc43_getreg(priv->base + LPC43_TMR_MCR_OFFSET);
+      regval |= 3;
+      lpc43_putreg(regval, priv->base + LPC43_TMR_MCR_OFFSET);
+    }
+
+  lpc43_tmr_enable(priv);
+}
+
+/****************************************************************************
+ * Name: lpc43_disableint
+ *
+ * Description:
+ *   Disable timer interrupts
+ *
+ * Input Parameters:
+ *   lower - A pointer the publicly visible representation of the "lower-half"
+ *           driver state structure.
+ *
+ * Returned Values:
+ *   Zero on success; a negated errno value on failure.
+ *
+ ****************************************************************************/
+
+static void lpc43_disableint(FAR struct timer_lowerhalf_s *lower, int source)
+{
+  FAR struct lpc43_lowerhalf_s *priv = (FAR struct lpc43_lowerhalf_s *)lower;
+
+  DEBUGASSERT(priv != NULL);
+
+  tmrinfo("Entry");
+
+  /* Disable interrupt */
+
+  lpc43_putreg(0, priv->base + LPC43_TMR_MCR_OFFSET);
+}
+
+/****************************************************************************
+ * Name: lpc43_ackint
+ *
+ * Description:
+ *   Acknoledge interrupt
+ *
+ * Input Parameters:
+ *   lower - A pointer the publicly visible representation of the "lower-half"
+ *           driver state structure.
+ *
+ * Returned Values:
+ *   Zero on success; a negated errno value on failure.
+ *
+ ****************************************************************************/
+
+static void lpc43_ackint(FAR struct timer_lowerhalf_s *lower, int source)
+{
+  FAR struct lpc43_lowerhalf_s *priv = (FAR struct lpc43_lowerhalf_s *)lower;
+
+  DEBUGASSERT(priv != NULL);
+
+  tmrinfo("Entry");
+
+  /* Cleared the interrupts */
+
+  lpc43_putreg(0x0f, priv->base + LPC43_TMR_IR_OFFSET);
+}
+
+/****************************************************************************
+ * Name: lpc43_checkint
+ *
+ * Description:
+ *   Acknoledge interrupt
+ *
+ * Input Parameters:
+ *   lower - A pointer the publicly visible representation of the "lower-half"
+ *           driver state structure.
+ *
+ * Returned Values:
+ *   Zero on success; a negated errno value on failure.
+ *
+ ****************************************************************************/
+
+static int lpc43_checkint(FAR struct timer_lowerhalf_s *lower, int source)
+{
+  tmrinfo("Entry");
+
+  return 0;
+}
+
+/****************************************************************************
+ * Name: lpc43_setisr
+ *
+ * Description:
+ *   Acknoledge interrupt
+ *
+ * Input Parameters:
+ *   lower - A pointer the publicly visible representation of the "lower-half"
+ *           driver state structure.
+ *
+ * Returned Values:
+ *   Zero on success; a negated errno value on failure.
+ *
+ ****************************************************************************/
+
+static int      lpc43_setisr(FAR struct timer_lowerhalf_s *lower,
+                            int (*handler)(int irq, void *context),
+                            int source)
+{
+  tmrinfo("Entry");
+
+  return 0;
+}
+
+/****************************************************************************
+ * Name: lpc43_tmr_init
+ *
+ * Description:
+ *   Initialize and return a timer reference
+ *
+ * Input Parameters:
+ *   lower - A pointer the publicly visible representation of the "lower-half"
+ *           driver state structure.
+ *
+ * Returned Values:
+ *   Zero on success; a negated errno value on failure.
+ *
+ ****************************************************************************/
+
+FAR struct lpc43_lowerhalf_s *lpc43_tmr_init(int timer)
+{
+  struct timer_lowerhalf_s *dev = NULL;
+
+  tmrinfo("Entry");
+
+  /* Get structure and enable power */
+
+  switch (timer)
+    {
+#ifdef CONFIG_LPC43_TMR0
+      case 0:
+        dev = (struct timer_lowerhalf_s *)&g_tmrdevs[0];
+        break;
+#endif
+#ifdef CONFIG_LPC43_TMR1
+      case 1:
+        dev = (struct timer_lowerhalf_s *)&g_tmrdevs[1];
+        break;
+#endif
+#ifdef CONFIG_LPC43_TMR2
+      case 2:
+        dev = (struct timer_lowerhalf_s *)&g_tmrdevs[2];
+        break;
+#endif
+#ifdef CONFIG_LPC43_TMR3
+      case 3:
+        dev = (struct timer_lowerhalf_s *)&g_tmrdevs[3];
+        break;
+#endif
+      default:
+        return NULL;
+    }
+
+  /* Is device already allocated */
+
+  /*if (((struct timer_lowerhalf_s *)dev)->mode != LPC43_TMR_MODE_UNUSED)
+    {
+      return NULL;
+    }*/
+
+  return dev;
+}
+
+/****************************************************************************
  * Public Functions
  ****************************************************************************/
 
@@ -707,6 +1059,7 @@ static int lpc43_ioctl(FAR struct timer_lowerhalf_s *lower, int cmd,
 
 void lpc43_tmrinitialize(FAR const char *devpath, int irq)
 {
+  int ret;
   FAR struct lpc43_lowerhalf_s *priv = &g_tmrdevs[irq-LPC43M4_IRQ_TIMER0];
 
   tmrinfo("Entry: devpath=%s\n", devpath);
@@ -765,7 +1118,10 @@ void lpc43_tmrinitialize(FAR const char *devpath, int irq)
 
   /* Register the timer driver as /dev/timerX */
 
-  (void)timer_register(devpath, (FAR struct timer_lowerhalf_s *)priv);
+  ret = timer_register(devpath, (FAR struct timer_lowerhalf_s *)priv);
+
+  tmrinfo("timer_register returned %d\n", ret);
+
 }
 
 #endif /* CONFIG_TIMER && CONFIG_LPC43_TMRx */
