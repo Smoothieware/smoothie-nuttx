@@ -1,7 +1,7 @@
 /****************************************************************************
  * arch/arm/src/lpc43/lpc43_timer.c
  *
- *   Copyright (C) 2016 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2014, 2016 Gregory Nutt. All rights reserved.
  *   Authors: Gregory Nutt <gnutt@nuttx.org>
  *            Alan Carvalho de Assis <acassis@gmail.com>
  *
@@ -77,26 +77,6 @@
 /****************************************************************************
  * Private Types
  ****************************************************************************/
-/* This structure provides the private representation of the "lower-half"
- * driver state structure.  This structure must be cast-compatible with the
- * timer_lowerhalf_s structure.
- */
-
-struct lpc43_lowerhalf_s
-{
-  FAR const struct timer_ops_s  *ops;  /* Lower half operations */
-
-  /* Private data */
-
-  uint32_t base;            /* Base address of the timer */
-  tccb_t   callback;        /* Current user interrupt callback */
-  FAR void *arg;            /* Argument passed to the callback function */
-  uint32_t timeout;         /* The current timeout value (us) */
-  uint32_t adjustment;      /* time lost due to clock resolution truncation (us) */
-  uint32_t clkticks;        /* actual clock ticks for current interval */
-  bool     started;         /* The timer has been started */
-  uint16_t tmrid;           /* Timer id */
-};
 
 /****************************************************************************
  * Private Function Prototypes
@@ -113,7 +93,7 @@ static void     lpc43_putreg(uint32_t val, uint32_t addr);
 
 /* Interrupt handling *******************************************************/
 
-static int      lpc43_interrupt(int irq, FAR void *context, FAR void *arg);
+static int      lpc43_interrupt(int irq, FAR void *context);
 
 /* "Lower half" driver methods **********************************************/
 
@@ -123,8 +103,8 @@ static int      lpc43_getstatus(FAR struct timer_lowerhalf_s *lower,
                   FAR struct timer_status_s *status);
 static int      lpc43_settimeout(FAR struct timer_lowerhalf_s *lower,
                   uint32_t timeout);
-static void     lpc43_setcallback(FAR struct timer_lowerhalf_s *lower,
-                  tccb_t callback, FAR void *arg);
+static tccb_t   lpc43_sethandler(FAR struct timer_lowerhalf_s *lower,
+                  tccb_t handler);
 static int      lpc43_ioctl(FAR struct timer_lowerhalf_s *lower, int cmd,
                   unsigned long arg);
 
@@ -141,7 +121,6 @@ static int      lpc43_checkint(FAR struct timer_lowerhalf_s *lower, int source);
 /****************************************************************************
  * Private Data
  ****************************************************************************/
-
 /* "Lower half" driver methods */
 
 static const struct timer_ops_s g_tmrops =
@@ -150,7 +129,7 @@ static const struct timer_ops_s g_tmrops =
   .stop       = lpc43_stop,
   .getstatus  = lpc43_getstatus,
   .settimeout = lpc43_settimeout,
-  .setcallback = lpc43_setcallback,
+  .sethandler = lpc43_sethandler,
   .ioctl      = lpc43_ioctl,
   .setclock   = lpc43_setclock,
   .setisr     = lpc43_setisr,
@@ -161,12 +140,50 @@ static const struct timer_ops_s g_tmrops =
 };
 
 /* "Lower half" driver state */
+/* This structure provides the private representation of the "lower-half"
+ * driver state structure.  This structure must be cast-compatible with the
+ * timer_lowerhalf_s structure.
+ */
+
+struct lpc43_lowerhalf_s
+{
+  FAR const struct timer_ops_s  *ops;  /* Lower half operations */
+
+  /* Private data */
+
+  uint32_t base;            /* Base address of the timer */
+  tccb_t   handler;         /* Current user interrupt handler */
+  uint32_t timeout;         /* The current timeout value (us) */
+  uint32_t adjustment;      /* time lost due to clock resolution truncation (us) */
+  uint32_t clkticks;        /* actual clock ticks for current interval */
+  bool     started;         /* The timer has been started */
+  uint16_t tmrid;           /* Timer id */
+};
+
 
 /* TODO - allocating all 6 now, even though we might not need them.
  *        May want to allocate the right number to not be wasteful.
  */
 
-static struct lpc43_lowerhalf_s g_tmrdevs[4];
+static struct lpc43_lowerhalf_s g_tmrdevs[4] =
+{
+  {
+    .ops  = &g_tmrops,
+    .base = LPC43_TIMER0_BASE,
+  },
+  {
+    .ops  = &g_tmrops,
+    .base = LPC43_TIMER1_BASE,
+  },
+  {
+    .ops  = &g_tmrops,
+    .base = LPC43_TIMER2_BASE,
+  },
+  {
+    .ops  = &g_tmrops,
+    .base = LPC43_TIMER3_BASE,
+  }
+};
 
 /****************************************************************************
  * Private Functions
@@ -191,8 +208,8 @@ static uint32_t lpc43_getreg(uint32_t addr)
 
   uint32_t val = getreg32(addr);
 
-  /* Is this the same value that we read from the same registe last time?
-   * Are we polling the register?  If so, suppress some of the output.
+  /* Is this the same value that we read from the same registe last time?  Are
+   * we polling the register?  If so, suppress some of the output.
    */
 
   if (addr == prevaddr && val == preval)
@@ -263,38 +280,38 @@ void tmr_clk_enable(uint16_t tmrid)
   /* Enable Timer 0 */
 
   if (tmrid == 0)
-    {
-      regval  = getreg32(LPC43_CCU1_M4_TIMER0_CFG);
-      regval |= CCU_CLK_CFG_RUN;
-      putreg32(regval, LPC43_CCU1_M4_TIMER0_CFG);
-    }
+  {
+    regval  = getreg32(LPC43_CCU1_M4_TIMER0_CFG);
+    regval |= CCU_CLK_CFG_RUN;
+    putreg32(regval, LPC43_CCU1_M4_TIMER0_CFG);
+  }
 
   /* Enable Timer 1 */
 
   if (tmrid == 1)
-    {
-      regval  = getreg32(LPC43_CCU1_M4_TIMER1_CFG);
-      regval |= CCU_CLK_CFG_RUN;
-      putreg32(regval, LPC43_CCU1_M4_TIMER1_CFG);
-    }
+  {
+    regval  = getreg32(LPC43_CCU1_M4_TIMER1_CFG);
+    regval |= CCU_CLK_CFG_RUN;
+    putreg32(regval, LPC43_CCU1_M4_TIMER1_CFG);
+  }
 
   /* Enable Timer 2 */
 
   if (tmrid == 2)
-    {
-      regval  = getreg32(LPC43_CCU1_M4_TIMER2_CFG);
-      regval |= CCU_CLK_CFG_RUN;
-      putreg32(regval, LPC43_CCU1_M4_TIMER2_CFG);
-    }
+  {
+    regval  = getreg32(LPC43_CCU1_M4_TIMER2_CFG);
+    regval |= CCU_CLK_CFG_RUN;
+    putreg32(regval, LPC43_CCU1_M4_TIMER2_CFG);
+  }
 
   /* Enable Timer 3 */
 
   if (tmrid == 3)
-    {
-      regval  = getreg32(LPC43_CCU1_M4_TIMER3_CFG);
-      regval |= CCU_CLK_CFG_RUN;
-      putreg32(regval, LPC43_CCU1_M4_TIMER3_CFG);
-    }
+  {
+    regval  = getreg32(LPC43_CCU1_M4_TIMER3_CFG);
+    regval |= CCU_CLK_CFG_RUN;
+    putreg32(regval, LPC43_CCU1_M4_TIMER3_CFG);
+  }
 }
 
 void tmr_clk_disable(uint16_t tmrid)
@@ -304,38 +321,38 @@ void tmr_clk_disable(uint16_t tmrid)
   /* Enable Timer 0 */
 
   if (tmrid == 0)
-    {
-      regval  = getreg32(LPC43_CCU1_M4_TIMER0_CFG);
-      regval &= ~CCU_CLK_CFG_RUN;
-      putreg32(regval, LPC43_CCU1_M4_TIMER0_CFG);
-    }
+  {
+    regval  = getreg32(LPC43_CCU1_M4_TIMER0_CFG);
+    regval &= ~CCU_CLK_CFG_RUN;
+    putreg32(regval, LPC43_CCU1_M4_TIMER0_CFG);
+  }
 
   /* Enable Timer 1 */
 
   if (tmrid == 1)
-    {
-      regval  = getreg32(LPC43_CCU1_M4_TIMER1_CFG);
-      regval &= ~CCU_CLK_CFG_RUN;
-      putreg32(regval, LPC43_CCU1_M4_TIMER1_CFG);
-    }
+  {
+    regval  = getreg32(LPC43_CCU1_M4_TIMER1_CFG);
+    regval &= ~CCU_CLK_CFG_RUN;
+    putreg32(regval, LPC43_CCU1_M4_TIMER1_CFG);
+  }
 
   /* Enable Timer 2 */
 
   if (tmrid == 2)
-    {
-      regval  = getreg32(LPC43_CCU1_M4_TIMER2_CFG);
-      regval &= ~CCU_CLK_CFG_RUN;
-      putreg32(regval, LPC43_CCU1_M4_TIMER2_CFG);
-    }
+  {
+    regval  = getreg32(LPC43_CCU1_M4_TIMER2_CFG);
+    regval &= ~CCU_CLK_CFG_RUN;
+    putreg32(regval, LPC43_CCU1_M4_TIMER2_CFG);
+  }
 
   /* Enable Timer 3 */
 
   if (tmrid == 3)
-    {
-      regval  = getreg32(LPC43_CCU1_M4_TIMER3_CFG);
-      regval &= ~CCU_CLK_CFG_RUN;
-      putreg32(regval, LPC43_CCU1_M4_TIMER3_CFG);
-    }
+  {
+    regval  = getreg32(LPC43_CCU1_M4_TIMER3_CFG);
+    regval &= ~CCU_CLK_CFG_RUN;
+    putreg32(regval, LPC43_CCU1_M4_TIMER3_CFG);
+  }
 }
 
 /****************************************************************************
@@ -345,14 +362,14 @@ void tmr_clk_disable(uint16_t tmrid)
  *   TC interrupt
  *
  * Input Parameters:
- *   Usual interrupt callback arguments.
+ *   Usual interrupt handler arguments.
  *
  * Returned Values:
  *   Always returns OK.
  *
  ****************************************************************************/
 
-static int lpc43_interrupt(int irq, FAR void *context, FAR void *arg)
+static int lpc43_interrupt(int irq, FAR void *context)
 {
   uint8_t chan_int = 0x0f;
   FAR struct lpc43_lowerhalf_s *priv = &g_tmrdevs[irq-LPC43M4_IRQ_TIMER0];
@@ -366,11 +383,11 @@ static int lpc43_interrupt(int irq, FAR void *context, FAR void *arg)
     {
       uint32_t timeout;
 
-      /* Is there a registered callback?  If the callback has been
-       * nullified, the timer will be stopped.
+      /* Is there a registered handler?  If the handler has been nullified,
+       * the timer will be stopped.
        */
 
-      if (priv->callback && priv->callback(&priv->timeout, priv->arg))
+      if (priv->handler && priv->handler(&priv->timeout))
         {
           /* Calculate new ticks / dither adjustment */
 
@@ -391,8 +408,7 @@ static int lpc43_interrupt(int irq, FAR void *context, FAR void *arg)
           tmrinfo("Stopped\n");
         }
 
-      /* Clear the interrupts */
-
+      /* Cleared the interrupts */
       lpc43_putreg(chan_int, priv->base + LPC43_TMR_IR_OFFSET);
     }
 
@@ -478,16 +494,18 @@ static int lpc43_start(FAR struct timer_lowerhalf_s *lower)
 
   lpc43_putreg(0, priv->base + LPC43_TMR_CCR_OFFSET); /* do not use capture */
 
-  if (priv->callback)
+  if (priv->handler)
     {
       /* Enable Match on MR0 generate interrupt and auto-restart */
 
-      lpc43_putreg(3, priv->base + LPC43_TMR_MCR_OFFSET);
+      regval = lpc43_getreg(priv->base + LPC43_TMR_MCR_OFFSET);
+      regval |= 3;
+      lpc43_putreg(regval, priv->base + LPC43_TMR_MCR_OFFSET);
     }
 
   /* Enable the timer */
 
-  lpc43_putreg(TMR_TCR_EN, priv->base + LPC43_TMR_TCR_OFFSET);
+  lpc43_tmr_enable(priv);
 
   priv->started = true;
   return OK;
@@ -543,8 +561,8 @@ static int lpc43_stop(FAR struct timer_lowerhalf_s *lower)
  *   Get the current timer status
  *
  * Input Parameters:
- *   lower  - A pointer the publicly visible representation of the "lower-
- *            half" driver state structure.
+ *   lower  - A pointer the publicly visible representation of the "lower-half"
+ *            driver state structure.
  *   status - The location to return the status information.
  *
  * Returned Values:
@@ -569,7 +587,7 @@ static int lpc43_getstatus(FAR struct timer_lowerhalf_s *lower,
       status->flags |= TCFLAGS_ACTIVE;
     }
 
-  if (priv->callback)
+  if (priv->handler)
     {
       status->flags |= TCFLAGS_HANDLER;
     }
@@ -579,11 +597,9 @@ static int lpc43_getstatus(FAR struct timer_lowerhalf_s *lower,
   status->timeout = priv->timeout;
 
   /* Get the time remaining until the timer expires (in microseconds) */
-  /* TODO - check on the +1 in the time left calculation */
 
   elapsed = lpc43_getreg(priv->base + LPC43_TMR_TC_OFFSET);
-  status->timeleft = ((uint64_t)priv->timeout * elapsed) /
-    (priv->clkticks + 1);
+  status->timeleft = ((uint64_t)priv->timeout * elapsed) / (priv->clkticks + 1); /* TODO - check on this +1 */
 
   tmrinfo("  flags    : %08x\n", status->flags);
   tmrinfo("  timeout  : %d\n", status->timeout);
@@ -598,8 +614,8 @@ static int lpc43_getstatus(FAR struct timer_lowerhalf_s *lower,
  *   Set a new timeout value (and reset the timer)
  *
  * Input Parameters:
- *   lower   - A pointer the publicly visible representation of the "lower
- *             half" driver state structure.
+ *   lower   - A pointer the publicly visible representation of the "lower-half"
+ *             driver state structure.
  *   timeout - The new timeout value in milliseconds.
  *
  * Returned Values:
@@ -630,21 +646,10 @@ static int lpc43_settimeout(FAR struct timer_lowerhalf_s *lower,
       return -ERANGE;
     }
 
-  /* Intended timeout */
-
-  priv->timeout = timeout;
-
-  /* Actual clock ticks */
-
-  priv->clkticks = (((uint64_t)timeout * TMR_FCLK) / 1000000);
-
-  /* Truncated timeout */
-
-  timeout = (1000000ULL * priv->clkticks) / TMR_FCLK;
-
-  /* Truncated time to be added to next interval (dither) */
-
-  priv->adjustment = priv->timeout - timeout;
+  priv->timeout = timeout;                                    /* Intended timeout */
+  priv->clkticks = (((uint64_t)timeout * TMR_FCLK) / 1000000); /* Actual clock ticks */
+  timeout = (1000000ULL * priv->clkticks) / TMR_FCLK;          /* Truncated timeout */
+  priv->adjustment = priv->timeout - timeout;                 /* Truncated time to be added to next interval (dither) */
 
   tmrinfo("fclk=%d clkticks=%d timout=%d, adjustment=%d\n",
           TMR_FCLK, priv->clkticks, priv->timeout, priv->adjustment);
@@ -653,15 +658,15 @@ static int lpc43_settimeout(FAR struct timer_lowerhalf_s *lower,
 }
 
 /****************************************************************************
- * Name: lpc43_setcallback
+ * Name: lpc43_sethandler
  *
  * Description:
- *   Call this user provided timeout callback.
+ *   Call this user provided timeout handler.
  *
  * Input Parameters:
  *   lower      - A pointer the publicly visible representation of the "lower-half"
  *                driver state structure.
- *   newcallback - The new timer expiration function pointer.  If this
+ *   newhandler - The new timer expiration function pointer.  If this
  *                function pointer is NULL, then the reset-on-expiration
  *                behavior is restored,
  *
@@ -671,23 +676,28 @@ static int lpc43_settimeout(FAR struct timer_lowerhalf_s *lower,
  *
  ****************************************************************************/
 
-static void lpc43_setcallback(FAR struct timer_lowerhalf_s *lower,
-                               tccb_t callback, FAR void *arg)
+static tccb_t lpc43_sethandler(FAR struct timer_lowerhalf_s *lower,
+                               tccb_t handler)
 {
   FAR struct lpc43_lowerhalf_s *priv = (FAR struct lpc43_lowerhalf_s *)lower;
   irqstate_t flags;
+  tccb_t oldhandler;
 
   flags = enter_critical_section();
 
   DEBUGASSERT(priv);
-  tmrinfo("Entry: callback=%p\n", callback);
+  tmrinfo("Entry: handler=%p\n", handler);
 
-  /* Save the new callback and its argument */
+  /* Get the old handler return value */
 
-   priv->callback = callback;
-   priv->arg      = arg;
+  oldhandler = priv->handler;
+
+  /* Save the new handler */
+
+   priv->handler = handler;
 
   leave_critical_section(flags);
+  return oldhandler;
 }
 
 /****************************************************************************
