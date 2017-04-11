@@ -61,7 +61,7 @@ endif
 
 ifneq ($(CONFIG_UCLIBCXX),y)
 CXXSRCS += libxx_cxa_guard.cxx
-#endif
+endif
 
 # Paths
 
