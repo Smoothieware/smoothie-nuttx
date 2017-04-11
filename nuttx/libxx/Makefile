@@ -40,7 +40,7 @@
 ASRCS =
 CSRCS =
 
-CXXSRCS  = libxx_cxapurevirtual.cxx libxx_eabi_atexit.cxx  libxx_cxa_atexit.cxx
+CXXSRCS  = libxx_cxapurevirtual.cxx libxx_eabi_atexit.cxx  libxx_cxa_atexit.cxx libxx_cxa_guard.cxx
 ifneq (,$(findstring y,$(CONFIG_UCLIBCXX_EXCEPTION) $(CONFIG_LIBCXX_EXCEPTION)))
 CXXSRCS += libxx__gnu_unwind_find_exidx.cxx
 endif
