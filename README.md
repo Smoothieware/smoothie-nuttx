@@ -3,6 +3,13 @@ A version of nuttx used by smoothie-v2
 
 This is preconfigured to include all drivers that are required for smoothie to operate.
 
-To build and export the library ```cd nuttx; make export```
+To build and export the library 
 
-Then unzip the nuttx-export.zip into the top of the ditrectory you want to develop in.
+```
+cd nuttx/tools
+./configure.sh bambino-200e/smoothiedev
+cd ..
+make export
+```
+
+Then unzip the resulting nuttx-export.zip into the top of the directory you want to develop in.
