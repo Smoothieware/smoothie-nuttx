@@ -32,6 +32,14 @@
 #elif defined(__sun__)
 # include <xlocale.h>
 # include <support/solaris/xlocale.h>
+#elif defined(__NuttX__)
+#include <cstdlib>
+#include <clocale>
+#include <cwctype>
+#include <ctype.h>
+#include <support/xlocale/__nop_locale_mgmt.h>
+#include <support/xlocale/__posix_l_fallback.h>
+#include <support/xlocale/__strtonum_fallback.h>
 #elif defined(_NEWLIB_VERSION)
 # include <support/newlib/xlocale.h>
 #elif (defined(__GLIBC__) || defined(__APPLE__)      || defined(__FreeBSD__) \

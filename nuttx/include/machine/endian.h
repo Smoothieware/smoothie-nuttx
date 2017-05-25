@@ -1,6 +1,8 @@
 #ifndef __MACHINE_ENDIAN_H__
 
+#ifndef __NuttX__
 #include <sys/config.h>
+#endif
 
 #ifndef BIG_ENDIAN
 #define BIG_ENDIAN 4321

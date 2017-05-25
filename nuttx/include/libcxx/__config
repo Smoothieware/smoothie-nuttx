@@ -877,7 +877,7 @@ extern "C" void __sanitizer_annotate_contiguous_container(
 #endif
 
 #if defined(__BIONIC__) || defined(__CloudABI__) ||                            \
-    defined(_LIBCPP_HAS_MUSL_LIBC)
+    defined(_LIBCPP_HAS_MUSL_LIBC) || defined(__NuttX__)
 #define _LIBCPP_PROVIDES_DEFAULT_RUNE_TABLE
 #endif
 
@@ -918,7 +918,7 @@ extern "C" void __sanitizer_annotate_contiguous_container(
 #endif
 
 #if !defined(_LIBCPP_HAS_NO_OFF_T_FUNCTIONS)
-#if defined(_WIN32) || defined(_NEWLIB_VERSION)
+#if defined(_WIN32) || defined(_NEWLIB_VERSION) || defined(__NuttX__)
 #define _LIBCPP_HAS_NO_OFF_T_FUNCTIONS
 #endif
 #endif

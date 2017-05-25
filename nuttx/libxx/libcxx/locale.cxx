@@ -28,7 +28,7 @@
 #include "__sso_allocator"
 #if defined(_LIBCPP_MSVCRT) || defined(__MINGW32__)
 #include "support/win32/locale_win32.h"
-#elif !defined(__BIONIC__)
+#elif !defined(__BIONIC__) && !defined(__NuttX__)
 #include <langinfo.h>
 #endif
 #include <stdlib.h>
@@ -38,6 +38,10 @@
 // lots of noise in the build log, but no bugs that I know of. 
 #if defined(__clang__)
 #pragma clang diagnostic ignored "-Wsign-conversion"
+#endif
+
+#ifndef MB_LEN_MAX
+#  define MB_LEN_MAX 8
 #endif
 
 _LIBCPP_BEGIN_NAMESPACE_STD
