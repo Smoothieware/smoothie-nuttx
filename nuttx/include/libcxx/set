@@ -393,6 +393,9 @@ swap(multiset<Key, Compare, Allocator>& x, multiset<Key, Compare, Allocator>& y)
 #pragma GCC system_header
 #endif
 
+extern "C++"
+{
+
 _LIBCPP_BEGIN_NAMESPACE_STD
 
 template <class _Key, class _Compare = less<_Key>,
@@ -1221,5 +1224,7 @@ swap(multiset<_Key, _Compare, _Allocator>& __x,
 }
 
 _LIBCPP_END_NAMESPACE_STD
+
+} //extern C++
 
 #endif  // _LIBCPP_SET
