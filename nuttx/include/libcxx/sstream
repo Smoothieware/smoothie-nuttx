@@ -181,6 +181,9 @@ typedef basic_stringstream<wchar_t> wstringstream;
 #pragma GCC system_header
 #endif
 
+extern "C++"
+{
+
 _LIBCPP_BEGIN_NAMESPACE_STD
 
 // basic_stringbuf
@@ -971,5 +974,7 @@ basic_stringstream<_CharT, _Traits, _Allocator>::str(const string_type& __s)
 }
 
 _LIBCPP_END_NAMESPACE_STD
+
+} // extern C++
 
 #endif  // _LIBCPP_SSTREAM
