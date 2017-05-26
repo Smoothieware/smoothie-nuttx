@@ -377,6 +377,9 @@ template <class Key, class T, class Hash, class Pred, class Alloc>
 #pragma GCC system_header
 #endif
 
+extern "C++"
+{
+
 _LIBCPP_BEGIN_NAMESPACE_STD
 
 template <class _Key, class _Cp, class _Hash,
@@ -2067,5 +2070,7 @@ operator!=(const unordered_multimap<_Key, _Tp, _Hash, _Pred, _Alloc>& __x,
 }
 
 _LIBCPP_END_NAMESPACE_STD
+
+}
 
 #endif  // _LIBCPP_UNORDERED_MAP
