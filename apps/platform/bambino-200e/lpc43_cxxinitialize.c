@@ -115,7 +115,7 @@ void up_cxxinitialize(void)
   for (initp = &_sinit; initp != &_einit; initp++)
     {
       initializer_t initializer = *initp;
-      cxxinfo("initp: %p initializer: %p\n", initp, initializer);
+      _info("initp: %p initializer: %p\n", initp, initializer);
 
       /* Make sure that the address is non-NULL and lies in the text region
        * defined by the linker script.  Some toolchains may put NULL values

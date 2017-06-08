@@ -45,6 +45,10 @@
 #include <nuttx/init.h>
 #include <nuttx/arch.h>
 
+#include <ios>
+#include <iostream>
+#include <sstream>
+
 //***************************************************************************
 // Definitions
 //***************************************************************************
@@ -77,7 +81,9 @@ class CHelloWorld
   public:
     CHelloWorld(void) : mSecret(42)
     {
-      cxxinfo("Constructor: mSecret=%d\n", mSecret);
+        std::ostringstream oss;
+        oss << "Hello World!" << mSecret << "\n";
+        std::cout << oss.str();
     }
 
     ~CHelloWorld(void)
@@ -128,6 +134,8 @@ extern "C"
 {
   int helloxx_main(int argc, char *argv[])
  {
+    std::ios_base::Init *start_std_streams = new std::ios_base::Init;
+
     // If C++ initialization for static constructors is supported, then do
     // that first
 

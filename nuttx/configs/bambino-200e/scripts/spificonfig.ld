@@ -98,10 +98,11 @@ SECTIONS
 		_etext = ABSOLUTE(.);
 	} > progmem
 
-	.init_section : {
-		_sinit = ABSOLUTE(.);
-		*(.init_array .init_array.*)
-		_einit = ABSOLUTE(.);
+	.init_array : {
+                PROVIDE_HIDDEN (_sinit = .);
+                KEEP (*(SORT(.init_array.*)))
+                KEEP (*(.init_array))
+                PROVIDE_HIDDEN (_einit = .);
 	} > progmem
 
 	.ARM.extab : {
