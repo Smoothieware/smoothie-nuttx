@@ -41,7 +41,7 @@
 #endif
 
 #ifndef MB_LEN_MAX
-#  define MB_LEN_MAX 8
+#  define MB_LEN_MAX 32
 #endif
 
 _LIBCPP_BEGIN_NAMESPACE_STD
