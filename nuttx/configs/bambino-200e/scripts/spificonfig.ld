@@ -99,8 +99,9 @@ SECTIONS
 	} > progmem
 
 	.init_section : {
-		_sinit = ABSOLUTE(.);
-		*(.init_array .init_array.*)
+		_sinit = ABSOLUTE(.);	
+		*(SORT_BY_NAME(.init_array.*))
+		*(.init_array)
 		_einit = ABSOLUTE(.);
 	} > progmem
 
@@ -120,7 +121,7 @@ SECTIONS
 		_sdata = ABSOLUTE(.);
 		*(.data .data.*)
 		*(.gnu.linkonce.d.*)
-		CONSTRUCTORS
+		SORT_BY_NAME(CONSTRUCTORS)
 		_edata = ABSOLUTE(.);
 	} > datamem AT > progmem
 

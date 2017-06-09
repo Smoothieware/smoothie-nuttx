@@ -134,8 +134,6 @@ extern "C"
 {
   int helloxx_main(int argc, char *argv[])
  {
-    std::ios_base::Init *start_std_streams = new std::ios_base::Init;
-
     // If C++ initialization for static constructors is supported, then do
     // that first
 
