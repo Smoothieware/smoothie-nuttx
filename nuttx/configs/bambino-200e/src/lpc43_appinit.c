@@ -43,6 +43,7 @@
 #include <stdio.h>
 #include <syslog.h>
 #include <errno.h>
+#include <sys/types.h>
 
 #include <nuttx/board.h>
 
@@ -194,6 +195,8 @@ static int nsh_sdinitialize(void)
 #else
   sdio_mediachange(g_sdiodev, true);
 #endif
+
+  return OK;
 }
 #else
 #  define nsh_sdinitialize() (OK)
