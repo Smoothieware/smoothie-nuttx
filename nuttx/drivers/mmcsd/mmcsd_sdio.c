@@ -2694,6 +2694,7 @@ static int mmcsd_sdinitialize(FAR struct mmcsd_state_s *priv)
   SDIO_CLOCK(priv->dev, CLOCK_SD_TRANSFER_1BIT);
   up_udelay(MMCSD_CLK_DELAY);
 
+#if 0
   /* Get the SD card Configuration Register (SCR).  We need this now because
    * that configuration register contains the indication whether or not
    * this card supports wide bus operation.
@@ -2707,6 +2708,9 @@ static int mmcsd_sdinitialize(FAR struct mmcsd_state_s *priv)
     }
 
   mmcsd_decodeSCR(priv, scr);
+#endif
+
+  priv->buswidth = MMCSD_SCR_BUSWIDTH_4BIT;
 
   /* Select width (4-bit) bus operation (if the card supports it) */
 
