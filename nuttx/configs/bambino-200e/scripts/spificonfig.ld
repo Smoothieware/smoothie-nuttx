@@ -75,6 +75,11 @@ MEMORY
 {
     progmem (rx)  : ORIGIN = 0x14000000, LENGTH = 1024K
     datamem (rwx) : ORIGIN = 0x10000000, LENGTH = 128K
+
+    SRAM2 (rwx) : ORIGIN = 0x10080000, LENGTH = 72K
+    AHB0_RAM(rwx) : ORIGIN = 0x20000000, LENGTH = 32K
+    AHB1_RAM(rwx) : ORIGIN = 0x20008000, LENGTH = 16K
+    ETB(rwx) :  ORIGIN = 0x2000C000, LENGTH = 16K
 }
 
 OUTPUT_ARCH(arm)
@@ -132,6 +137,33 @@ SECTIONS
 		*(COMMON)
 		_ebss = ABSOLUTE(.);
 	} > datamem
+
+
+
+/* Code can explicitly ask for data to be 
+       placed in these higher RAM banks where
+       they will be left uninitialized. 
+    */
+    .AHBSRAM0 (NOLOAD):
+    {
+        Image$$RW_IRAM2$$Base = . ;
+        PROVIDE(__AHB0_block_start = .);
+        *(AHBSRAM0)
+        Image$$RW_IRAM2$$ZI$$Limit = .;
+        PROVIDE(__AHB0_dyn_start = .);
+        PROVIDE(__AHB0_end = ORIGIN(AHB0_RAM) + LENGTH(AHB0_RAM));
+    } > AHB0_RAM
+
+    .AHBSRAM1 (NOLOAD):
+    {
+        Image$$RW_IRAM3$$Base = . ;
+        PROVIDE(__AHB1_block_start = .);
+        *(AHBSRAM1)
+        Image$$RW_IRAM3$$ZI$$Limit = .;
+        PROVIDE(__AHB1_dyn_start = .);
+        PROVIDE(__AHB1_end = ORIGIN(AHB1_RAM) + LENGTH(AHB1_RAM));
+    } > AHB1_RAM
+
 					/* Stabs debugging sections.	*/
 	.stab 0 : { *(.stab) }
 	.stabstr 0 : { *(.stabstr) }
