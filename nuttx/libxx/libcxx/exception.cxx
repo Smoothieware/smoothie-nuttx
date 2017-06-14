@@ -119,8 +119,13 @@ int uncaught_exceptions() _NOEXCEPT
 #   else
 #       warning uncaught_exception not yet implemented
 #   endif
+#if defined(__NuttX__)
+#warning uncaught_exception HACKED in nuttx to return 0
+				return 0;
+#else
     fprintf(stderr, "uncaught_exceptions not yet implemented\n");
-    ::abort();
+		::abort();
+#endif
 #endif  // __APPLE__
 }
 
