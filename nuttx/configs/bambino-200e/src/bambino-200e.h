@@ -77,7 +77,15 @@
  *  gpio0[7]  - User Button USR1
  ****************************************************************************/
 
-#define BAMBINO_BUT1 (GPIO_INTBOTH | GPIO_FLOAT | GPIO_PORT0 | GPIO_PIN7)
+#define BAMBINO_BUT1 (GPIO_INT_EDGE_BOTH | GPIO_FLOAT | GPIO_PORT0 | GPIO_PIN7)
+
+/****************************************************************************
+ *  SD Card Detection
+ *  ----------------------------
+ *  gpio1[6]  - SD_CD pin
+ ****************************************************************************/
+
+#define GPIO_SD_CD (GPIO_MODE_PININTR | GPIO_INT_EDGE_BOTH | GPIO_PORT1 | GPIO_PIN6)
 
 /* Used by High Priority Test */
 
@@ -88,6 +96,10 @@
 /* Button IRQ numbers */
 
 #define BAMBINO_BUT1_IRQ  LPC43_IRQ_P0p23
+
+/* SD_CD IRQ number */
+
+#define GPIO_SD_CD_IRQ  LPC43M4_IRQ_PININT6 /* Pin 6 of Port 1 */
 
 #define GPIO_SSP0_SCK  GPIO_SSP0_SCK_1
 #define GPIO_SSP0_SSEL GPIO_SSP0_SSEL_1
@@ -141,6 +153,18 @@ void weak_function lpc43_sspdev_initialize(void);
 int lpc43_timerinitialize(void);
 #else
 #  define lpc43_timerinitialize() (0)
+#endif
+
+/****************************************************************************
+ * Name: lpc43_mmcsd_initialize
+ *
+ * Description:
+ *   Perform architecture specific initialization
+ *
+ ****************************************************************************/
+
+#ifdef CONFIG_LPC43_SDMMC
+int lpc43_mmcsd_initialize(void);
 #endif
 
 #endif /* __ASSEMBLY__ */

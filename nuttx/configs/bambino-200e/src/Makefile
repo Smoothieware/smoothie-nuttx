@@ -43,6 +43,10 @@ ifeq ($(CONFIG_LIB_BOARDCTL),y)
 CSRCS += lpc43_appinit.c
 endif
 
+ifeq ($(CONFIG_LPC43_SDMMC),y)
+CSRCS += lpc43_mmcsd.c
+endif
+
 ifeq ($(CONFIG_BAMBINO_HIGHPRI),y)
 CSRCS += lpc43_highpri.c
 endif
