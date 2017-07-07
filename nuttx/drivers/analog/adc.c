@@ -390,7 +390,7 @@ static int adc_receive(FAR struct adc_dev_s *dev, uint8_t ch, int32_t data)
    */
 
   nexttail = fifo->af_tail + 1;
-  if (nexttail >= CONFIG_ADC_FIFOSIZE)
+  if (nexttail > CONFIG_ADC_FIFOSIZE)
     {
       nexttail = 0;
     }

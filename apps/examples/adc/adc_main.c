@@ -361,7 +361,7 @@ int adc_main(int argc, char *argv[])
         else
           {
             printf("Sample:\n");
-            for (i = 0; i < nsamples; i++)
+            for (i = 0; i <= (nsamples-1); i++)
               {
                 printf("%d: channel: %d value: %d\n",
                        i+1, sample[i].am_channel, sample[i].am_data);

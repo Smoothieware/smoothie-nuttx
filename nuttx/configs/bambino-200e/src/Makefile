@@ -61,6 +61,10 @@ else
 CSRCS += lpc43_userleds.c
 endif
 
+ifeq ($(CONFIG_LPC43_ADC0),y)
+CSRCS += lpc43_adc.c
+endif
+
 ifeq ($(CONFIG_ARCH_BUTTONS),y)
 CSRCS += lpc43_buttons.c
 endif

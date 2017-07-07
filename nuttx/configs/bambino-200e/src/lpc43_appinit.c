@@ -179,11 +179,25 @@ static int nsh_spifi_initialize(void)
 
 int board_app_initialize(uintptr_t arg)
 {
+  int ret;
+
   /* Initialize the SPIFI block device */
 
   (void)nsh_spifi_initialize();
 
+#ifdef CONFIG_LPC43_SDMMC
   (void)lpc43_mmcsd_initialize();
+#endif
+
+#ifdef CONFIG_ADC
+  /* Initialize ADC and register the ADC driver. */
+
+  ret = lpc43_adc_setup();
+  if (ret < 0)
+    {
+      syslog(LOG_ERR, "ERROR: lpc43_adc_setup failed: %d\n", ret);
+    }
+#endif
 
 #ifdef CONFIG_TIMER
   /* Registers the timers */
