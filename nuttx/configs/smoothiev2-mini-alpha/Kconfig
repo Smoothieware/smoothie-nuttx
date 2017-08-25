@@ -1,0 +1,39 @@
+#
+# For a description of the syntax of this configuration file,
+# see the file kconfig-language.txt in the NuttX tools repository.
+#
+
+if ARCH_BOARD_SMOOTHIE_V2MINIALPHA
+
+config SMOOTHIE_HIGHPRI
+        bool "High priority interrupt test"
+        default n
+        depends on ARCH_HIPRI_INTERRUPT
+        ---help---
+                This selection enables building of the custom test for the Cortex-M
+                high priority, nested interrupts.  ARCH_HIPRI_INTERRUPT must first
+                be enabled.  This test is only implemented on the STM32F103VCT6
+                (ARCH_CHIP_STM32F103VC) but should be easily ported to other STM32
+                architectures.
+
+if SMOOTHIE_HIGHPRI
+
+config SMOOTHIE_TMR0_FREQUENCY
+        int "TIM6 Frequency"
+        default 1000000
+        ---help---
+                TMR0 is used to drive the high priority, nested interrupt in the
+                test enabled with SMOOTHIE_HIGHPRI.  This setting specifies the
+                frequency of the TMR0 input clock.
+
+config SMOOTHIE_TMR0_PERIOD
+        int "TIM6 Period"
+        default 1000000
+        ---help---
+                TMR0 is used to drive the high priority, nested interrupt in the
+                test enabled with SMOOTHIE_HIGHPRI.  This setting specifies
+                period of the TMR0 interrupt in units of SMOOTHIE_TMR0_FREQUENCY.
+
+endif # SMOOTHIE_HIGHPRI
+
+endif
