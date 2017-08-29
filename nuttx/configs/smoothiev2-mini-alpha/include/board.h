@@ -293,9 +293,9 @@
  * file arch/arc/src/lpc43xx/lpc4310203050_pinconf.h for more info).
  */
 
-#define PINCONF_U0_TXD      PINCONF_U0_TXD_3
-#define PINCONF_U0_RXD      PINCONF_U0_RXD_3
-#define PINCONF_U0_DIR      PINCONF_U0_DIR_3
+#define PINCONF_U0_TXD      PINCONF_U0_TXD_1
+#define PINCONF_U0_RXD      PINCONF_U0_RXD_1
+#define PINCONF_U0_DIR      PINCONF_U0_DIR_1
 
 #define PINCONF_U1_TXD      PINCONF_U1_TXD_5
 #define PINCONF_U1_RXD      PINCONF_U1_RXD_1
