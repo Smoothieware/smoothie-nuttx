@@ -104,7 +104,7 @@ SECTIONS
 	} > progmem
 
 	.init_section : {
-		_sinit = ABSOLUTE(.);	
+		_sinit = ABSOLUTE(.);
 		*(SORT_BY_NAME(.init_array.*))
 		*(.init_array)
 		_einit = ABSOLUTE(.);
@@ -126,6 +126,8 @@ SECTIONS
 		_sdata = ABSOLUTE(.);
 		*(.data .data.*)
 		*(.gnu.linkonce.d.*)
+        . = ALIGN(4);
+        *(.ramfunctions) /* !!!! Placing functions in .ramfunctions section in RAM */
 		SORT_BY_NAME(CONSTRUCTORS)
 		_edata = ABSOLUTE(.);
 	} > datamem AT > progmem
@@ -140,9 +142,9 @@ SECTIONS
 
 
 
-/* Code can explicitly ask for data to be 
+/* Code can explicitly ask for data to be
        placed in these higher RAM banks where
-       they will be left uninitialized. 
+       they will be left uninitialized.
     */
     .AHBSRAM0 (NOLOAD):
     {
