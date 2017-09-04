@@ -48,7 +48,7 @@ CSRCS += lpc43_mmcsd.c
 endif
 
 ifeq ($(CONFIG_SMOOTHIE_HIGHPRI),y)
-CSRCS += lpc43_highpri.c
+#CSRCS += lpc43_highpri.c
 endif
 
 ifeq ($(CONFIG_ARCH_FPU),y)

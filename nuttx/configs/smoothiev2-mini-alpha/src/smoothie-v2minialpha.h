@@ -34,8 +34,7 @@
  *
  ****************************************************************************/
 
-#ifndef _CONFIGS_SMOOTHIE_200E_SRC_SMOOTHIE_H
-#define _CONFIGS_SMOOTHIE_200E_SRC_SMOOTHIE_H
+#pragma once
 
 /****************************************************************************
  * Included Files
@@ -52,10 +51,10 @@
  ****************************************************************************/
 
 /****************************************************************************
- *   LEDs GPIO                         PIN     SIGNAL NAME
- *  -------------------------------- ------- --------------
- *  gpio3[7] - LED1                  101     GPIO3[7]
- *  gpio5[5] - LED2                  91      GPIO5[5]
+ *  LED1   GPIO2[10]
+ *  LED2   GPIO2[9]
+ *  LED3   GPIO6[13]
+ *  LED4   GPIO6[12]
  *
  ****************************************************************************/
 
@@ -66,10 +65,10 @@
  * - No buffering, glitch filtering, slew=slow
  */
 
-#define PINCONFIG_LED1 PINCONF_GPIO3p7
-#define PINCONFIG_LED2 PINCONF_GPIO5p5
-#define GPIO_LED1      (GPIO_MODE_OUTPUT | GPIO_VALUE_ONE | GPIO_PORT3 | GPIO_PIN7)
-#define GPIO_LED2      (GPIO_MODE_OUTPUT | GPIO_VALUE_ONE | GPIO_PORT5 | GPIO_PIN5)
+#define PINCONFIG_LED1 PINCONF_GPIO2p10
+#define PINCONFIG_LED2 PINCONF_GPIO2p9
+#define GPIO_LED1      (GPIO_MODE_OUTPUT | GPIO_VALUE_ONE | GPIO_PORT2 | GPIO_PIN10)
+#define GPIO_LED2      (GPIO_MODE_OUTPUT | GPIO_VALUE_ONE | GPIO_PORT2 | GPIO_PIN9)
 
 /****************************************************************************
  *  Buttons GPIO
@@ -89,9 +88,9 @@
 
 /* Used by High Priority Test */
 
-#define GPIO_TEST      (GPIO_MODE_OUTPUT | GPIO_VALUE_ONE | GPIO_PORT1 | GPIO_PIN10)
+// #define GPIO_TEST      (GPIO_MODE_OUTPUT | GPIO_VALUE_ONE | GPIO_PORT1 | GPIO_PIN10)
 
-#define PINCONFIG_TEST PINCONF_GPIO1p10
+// #define PINCONFIG_TEST PINCONF_GPIO1p10
 
 /* Button IRQ numbers */
 
@@ -168,4 +167,3 @@ int lpc43_mmcsd_initialize(void);
 #endif
 
 #endif /* __ASSEMBLY__ */
-#endif /* _CONFIGS_SMOOTHIE_200E_SRC_SMOOTHIE_H */

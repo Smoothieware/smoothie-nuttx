@@ -1,5 +1,5 @@
 /****************************************************************************
- * configs/bambino-200e/include/board.h
+ * configs/smoothiev2-mini-alpha/include/board.h
  *
  *   Copyright (C) 2016 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -34,8 +34,7 @@
  *
  ****************************************************************************/
 
-#ifndef __CONFIG_BAMBINO_200E_INCLUDE_BOARD_H
-#define __CONFIG_BAMBINO_200E_INCLUDE_BOARD_H
+#pragma once
 
 /****************************************************************************
  * Included Files
@@ -234,13 +233,15 @@
 #define BOARD_USART3_BASEFREQ       BOARD_XTAL_FREQUENCY
 
 /* LED definitions *********************************************************/
-/* The Bambino 200E has 2 user-controllable LEDs labeled LED1 and LED2 in the
+/* The Smoothie v2 mini has 4 user-controllable LEDs labeled LED1 thru LED4 in the
  * schematic and on bus referred to has GPIO3[7] and GPIO5[5], respectively.
  *
- *  LED1   GPIO3[7]
- *  LED2   GPIO5[5]
+ *  LED1   GPIO2[10]
+ *  LED2   GPIO2[9]
+ *  LED3   GPIO6[13]
+ *  LED4   GPIO6[12]
  *
- * LEDs are pulled high to a low output illuminates the LED.
+ * LEDs are pulled low so a high output illuminates the LED.
  *
  * LED index values for use with board_userled()
  */
@@ -356,4 +357,3 @@ void lpc43_boardinitialize(void);
 #endif
 
 #endif /* __ASSEMBLY__ */
-#endif  /* __CONFIG_BAMBINO_200E_INCLUDE_BOARD_H */

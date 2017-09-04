@@ -140,17 +140,17 @@ void board_autoled_on(int led)
     {
       default:
       case 0:
-        lpc43_gpio_write(GPIO_LED1, true);   /* LED1 OFF */
-        lpc43_gpio_write(GPIO_LED2, true);   /* LED2 OFF */
+        lpc43_gpio_write(GPIO_LED1, false);   /* LED1 OFF */
+        lpc43_gpio_write(GPIO_LED2, false);   /* LED2 OFF */
         break;
 
       case 1:
-        lpc43_gpio_write(GPIO_LED1, false);  /* LED1 ON */
-        lpc43_gpio_write(GPIO_LED2, true);   /* LED2 OFF */
+        lpc43_gpio_write(GPIO_LED1, true);  /* LED1 ON */
+        lpc43_gpio_write(GPIO_LED2, false);   /* LED2 OFF */
         break;
 
       case 2:
-        lpc43_gpio_write(GPIO_LED2, false);  /* LED2 ON */
+        lpc43_gpio_write(GPIO_LED2, true);  /* LED2 ON */
         break;
     }
 }
@@ -169,7 +169,7 @@ void board_autoled_off(int led)
         break;
 
       case 2:
-        lpc43_gpio_write(GPIO_LED2, true);  /* LED2 OFF */
+        lpc43_gpio_write(GPIO_LED2, false);  /* LED2 OFF */
         break;
     }
 }
