@@ -87,6 +87,8 @@
 #define MCI_DMADES0_FS          (1 << 3)
 #define MCI_DMADES0_LD          (1 << 2)
 #define MCI_DMADES0_DIC         (1 << 1)
+#define MCI_DMADES1_MAXTR       4096
+#define MCI_DMADES1_BS1(x)      (x)
 
 /* Configuration ************************************************************/
 /* Required system configuration options:
@@ -187,7 +189,7 @@ typedef struct {
         volatile uint32_t des3;                                         /*!< Buffer address pointer 2 */
 } sdmmc_dma_t;
 
-sdmmc_dma_t mci_dma_dd[2];
+sdmmc_dma_t mci_dma_dd[1 + (0x10000/MCI_DMADES1_MAXTR)];
 
 /* This structure defines the state of the LPC43XX SD card interface */
 
@@ -2203,7 +2205,13 @@ static int lpc43_registercallback(FAR struct sdio_dev_s *dev,
 static int lpc43_dmarecvsetup(FAR struct sdio_dev_s *dev, FAR uint8_t *buffer,
                               size_t buflen)
 {
+  int i = 0;
+  uint32_t ctrl = 0;
+  uint32_t maxs = 0;
+
   mcinfo("Entry!\n");
+
+  _info("DMA size: %d\n", buflen);
 
   struct lpc43_dev_s *priv = (struct lpc43_dev_s *)dev;
   //uint32_t blocksize;
@@ -2213,6 +2221,8 @@ static int lpc43_dmarecvsetup(FAR struct sdio_dev_s *dev, FAR uint8_t *buffer,
 
   DEBUGASSERT(priv != NULL && buffer != NULL && buflen > 0);
   DEBUGASSERT(((uint32_t)buffer & 3) == 0);
+
+  ctrl = MCI_DMADES0_OWN | MCI_DMADES0_CH;
 
   /* Wide bus operation is required for DMA */
 
@@ -2233,11 +2243,55 @@ static int lpc43_dmarecvsetup(FAR struct sdio_dev_s *dev, FAR uint8_t *buffer,
 
       /* Setup DMA list */
 
-      mci_dma_dd[0].des0 = MCI_DMADES0_OWN | MCI_DMADES0_CH | MCI_DMADES0_FS | MCI_DMADES0_LD;
-      mci_dma_dd[0].des1 = 512;
-      mci_dma_dd[0].des2 = priv->buffer;
-      mci_dma_dd[0].des3 = (uint32_t) &mci_dma_dd[1];
-    
+      while(buflen > 0)
+        {
+          /* Limit size of the transfer to maximum buffer size */
+
+          maxs = buflen;
+
+          if (maxs > MCI_DMADES1_MAXTR)
+            {
+              maxs = MCI_DMADES1_MAXTR;
+            }
+
+          buflen -= maxs;
+
+          /* Set buffer size */
+
+          mci_dma_dd[i].des1 = MCI_DMADES1_BS1(maxs);
+
+          /* Setup buffer address (chained) */
+
+          mci_dma_dd[i].des2 = (uint32_t) priv->buffer + (i * MCI_DMADES1_MAXTR);
+
+          /* Setup basic control */
+
+          ctrl = MCI_DMADES0_OWN | MCI_DMADES0_CH;
+
+          if (i == 0)
+            {
+              ctrl |= MCI_DMADES0_FS; /* First DMA buffer */
+            }
+
+          /* No more data? Then this is the last descriptor */
+
+          if (!buflen)
+            {
+              ctrl |= MCI_DMADES0_LD;
+            }
+          else
+            {
+              ctrl |= MCI_DMADES0_DIC;
+            }
+
+          /* Another descriptor is needed */
+
+          mci_dma_dd[i].des0 = ctrl;
+          mci_dma_dd[i].des3 = (uint32_t) &mci_dma_dd[i + 1];
+
+          i++;
+        }
+
       lpc43_putreg((uint32_t) &mci_dma_dd[0], LPC43_SDMMC_DBADDR);
     }
 
