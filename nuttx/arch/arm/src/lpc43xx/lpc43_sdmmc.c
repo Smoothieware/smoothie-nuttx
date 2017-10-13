@@ -116,10 +116,10 @@
 
 /* Clock Division */
 
-#define LPC43_CLKDIV_INIT         6   /* Divide by 510 = 400KHz */
-#define SDCARD_CLOCK_MMCXFR       102 /* SDCARD_MMCXFR_CLKDIV   */
-#define SDCARD_CLOCK_SDWIDEXFR    5   /* SDCARD_SDXFR_CLKDIV    */
-#define SDCARD_CLOCK_SDXFR        102 /* SDCARD_SDXFR_CLKDIV    */
+#define LPC43_CLKDIV_INIT         165 /* Divide by 165 = 400KHz */
+#define SDCARD_CLOCK_MMCXFR       2   /* SDCARD_MMCXFR_CLKDIV   */
+#define SDCARD_CLOCK_SDWIDEXFR    2   /* SDCARD_SDXFR_CLKDIV    */
+#define SDCARD_CLOCK_SDXFR        2   /* SDCARD_SDXFR_CLKDIV    */
 
 /* Timing */
 
@@ -2469,13 +2469,23 @@ static void lpc43_callback(void *arg)
 
 FAR struct sdio_dev_s *sdio_initialize(int slotno)
 {
+  irqstate_t flags;
   uint32_t   regval;
 
   mcinfo("Entry!\n");
 
+  flags = enter_critical_section();
+
   /* There is only one slot */
 
   struct lpc43_dev_s *priv = &g_scard_dev;
+
+  /* Configure clocking */
+
+  regval  = getreg32(LPC43_BASE_SDIO_CLK);
+  regval &= ~BASE_SDIO_CLK_CLKSEL_MASK;
+  regval |= (BOARD_SDIO_CLKSRC | BASE_SDIO_CLK_AUTOBLOCK);
+  putreg32(regval, LPC43_BASE_SDIO_CLK);
 
   /* Enable clocking to the SDIO block */
 
@@ -2523,6 +2533,8 @@ FAR struct sdio_dev_s *sdio_initialize(int slotno)
    */
 
   lpc43_reset(&priv->dev);
+
+  leave_critical_section(flags);
 
   mcinfo("Leaving!\n");
 

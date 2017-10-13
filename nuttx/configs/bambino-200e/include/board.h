@@ -179,6 +179,10 @@
 #define BOARD_SSP1_CLKSRC           BASE_SSP1_CLKSEL_IDIVA
 #define BOARD_SSP1_BASEFREQ         BOARD_IDIVA_FREQUENCY
 
+/* SDIO Clocking */
+
+#define BOARD_SDIO_CLKSRC           BASE_SDIO_CLKSEL_PLL1
+
 /* USB0 ********************************************************************/
 /* Settings needed in lpc43_cpu.c */
 
