@@ -49,7 +49,7 @@ float logf(float x)
   while (y > y_old + epsilon || y < y_old - epsilon)
     {
       y_old = y;
-      ey = exp(y);
+      ey = expf(y);
       y -= (ey - x) / ey;
 
       if (y > FLT_MAX_EXP_X)
