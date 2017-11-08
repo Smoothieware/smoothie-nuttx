@@ -75,8 +75,8 @@
 
 #define CONFIG_LPC43_SDMMC_REGDEBUG 1
 
-#define mcinfo _info
-#define mcerr _info
+//#define mcinfo _info
+//#define mcerr _info
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -2512,16 +2512,16 @@ FAR struct sdio_dev_s *sdio_initialize(int slotno)
 
   /* Configure GPIOs for 4-bit, wide-bus operation */
 
-  lpc43_pin_config(PINCONF_SD_DAT0_1);
+  lpc43_pin_config(BOARD_PIN_SD_DAT0);
 #ifndef CONFIG_SDIO_WIDTH_D1_ONLY
-  lpc43_pin_config(PINCONF_SD_DAT1_1);
-  lpc43_pin_config(PINCONF_SD_DAT2_1);
-  lpc43_pin_config(PINCONF_SD_DAT3_1);
+  lpc43_pin_config(BOARD_PIN_SD_DAT1);
+  lpc43_pin_config(BOARD_PIN_SD_DAT2);
+  lpc43_pin_config(BOARD_PIN_SD_DAT3);
 #endif
-  lpc43_pin_config(PINCONF_SD_CD_1);
-  lpc43_pin_config(PINCONF_SD_CMD_1);
+  lpc43_pin_config(BOARD_PIN_SD_CD);
+  lpc43_pin_config(BOARD_PIN_SD_CMD);
+  lpc43_pin_config(BOARD_PIN_SD_CLK);
 
-  //lpc43_pin_config(CLKCONF_SD_CLK_2);
   regval  = getreg32(LPC43_SCU_SFSCLK2);
   regval |= (2 << 3);   /* Disable pull-down and pull-up resistor */
   regval |= (1 << 6);   /* Enable Input buffer */

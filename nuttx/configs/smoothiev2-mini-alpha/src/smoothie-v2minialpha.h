@@ -81,10 +81,10 @@
 /****************************************************************************
  *  SD Card Detection
  *  ----------------------------
- *  gpio1[6]  - SD_CD pin
+ *  gpio6[7]  - SD_CD pin
  ****************************************************************************/
 
-#define GPIO_SD_CD (GPIO_MODE_PININTR | GPIO_INT_EDGE_BOTH | GPIO_PORT1 | GPIO_PIN6)
+#define GPIO_SD_CD (GPIO_MODE_PININTR | GPIO_INT_EDGE_BOTH | GPIO_PORT6 | GPIO_PIN7)
 
 /* Used by High Priority Test */
 
@@ -98,7 +98,7 @@
 
 /* SD_CD IRQ number */
 
-#define GPIO_SD_CD_IRQ  LPC43M4_IRQ_PININT6 /* Pin 6 of Port 1 */
+#define GPIO_SD_CD_IRQ  LPC43M4_IRQ_PININT7 /* Pin 7 of Port 6 */
 
 #define GPIO_SSP0_SCK  GPIO_SSP0_SCK_1
 #define GPIO_SSP0_SSEL GPIO_SSP0_SSEL_1

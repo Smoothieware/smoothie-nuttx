@@ -320,6 +320,17 @@
 #define GPIO_ENET_RESET     (GPIO_MODE_OUTPUT | GPIO_VALUE_ONE | GPIO_PORT0 | GPIO_PIN4)
 #define PINCONF_ENET_MDC    PINCONF_ENET_MDC_3
 
+/* SDCard */
+
+#define BOARD_PIN_SD_DAT0   PINCONF_SD_DAT0_1
+#define BOARD_PIN_SD_DAT1   PINCONF_SD_DAT1_1
+#define BOARD_PIN_SD_DAT2   PINCONF_SD_DAT2_1
+#define BOARD_PIN_SD_DAT3   PINCONF_SD_DAT3_1
+#define BOARD_PIN_SD_CD     PINCONF_SD_CD_2
+#define BOARD_PIN_SD_CMD    PINCONF_SD_CMD_1
+#define BOARD_PIN_SD_CLK    PINCONF_SD_CLK
+
+
 /****************************************************************************
  * Public Types
  ****************************************************************************/
