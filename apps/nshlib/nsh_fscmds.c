@@ -163,12 +163,13 @@ static int ls_handler(FAR struct nsh_vtbl_s *vtbl, FAR const char *dirpath,
         {
           FAR char *fullpath = nsh_getdirpath(vtbl, dirpath, entryp->d_name);
           ret = stat(fullpath, &buf);
+          nsh_output(vtbl, "\nfullpath = %s\n", fullpath);
           free(fullpath);
         }
       else
         {
           /* A NULL entryp signifies that we are running ls on a single file */
-
+          nsh_output(vtbl, "\ndirpath = %s\n", dirpath);
           ret = stat(dirpath, &buf);
         }
 
