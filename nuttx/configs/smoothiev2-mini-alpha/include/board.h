@@ -313,6 +313,38 @@
 #define PINCONF_U3_RXD      PINCONF_U3_RXD_2
 #define PINCONF_U3_DIR      PINCONF_U3_DIR_2
 
+/* SPI Pins ****************************************************************/
+/* The Smoothie v2 mini-alpha has SPI peripheral pins reserved for SPIFI.
+ * SSP0 and SSP1 are available on Port 40 and 10, respectively:
+ *
+ *   ---------  ----------  -----------------
+ *    SIGNAL    Port / Pin  LPC4330FET256 PIN
+ *   ---------  ----------  -----------------
+ *   SSP0_SCK   p:25 / p:3        P3_0
+ *   SSP0_SSEL  p:25 / p:6        PF_1
+ *   SSP0_MISO  p:25 / p:4        PF_2
+ *   SSP0_MOSI  p:25 / p:5        PF_3
+ *   SSP1_SCK   p:40 / p:3        PF_4
+ *   SSP1_SSEL  p:40 / p:6        P1_5
+ *   SSP1_MISO  p:40 / p:4        P1_3
+ *   SSP1_MOSI  p:40 / p:5        P1_4
+ *   ---------  ----------  -----------------
+ *
+ * The following definitions must be provided so that the LPC43 serial
+ * driver can set up the SPI ports properly (see the
+ * file arch/arm/src/lpc43xx/lpc4310203050_pinconf.h for more info).
+ */
+
+#define PINCONF_SSP0_SCK  PINCONF_SSP0_SCK_3
+#define PINCONF_SSP0_SSEL PINCONF_SSP0_SSEL_2
+#define PINCONF_SSP0_MISO PINCONF_SSP0_MISO_2
+#define PINCONF_SSP0_MOSI PINCONF_SSP0_MOSI_2
+
+#define PINCONF_SSP1_SCK  PINCONF_SSP1_SCK_1
+#define PINCONF_SSP1_SSEL PINCONF_SSP1_SSEL_3
+#define PINCONF_SSP1_MISO PINCONF_SSP1_MISO_3
+#define PINCONF_SSP1_MOSI PINCONF_SSP1_MOSI_3
+
 /* Ethernet */
 
 #define PINCONF_ENET_RX_DV  PINCONF_ENET_RX_DV_2

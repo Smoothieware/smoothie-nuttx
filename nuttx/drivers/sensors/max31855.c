@@ -77,6 +77,7 @@ struct max31855_dev_s
 {
   FAR struct spi_dev_s *spi;           /* Saved SPI driver instance */
   int16_t temp;
+  uint16_t devid;                      /* Select minor device number */
 };
 
 
@@ -203,7 +204,7 @@ static ssize_t max31855_read(FAR struct file *filep, FAR char *buffer, size_t bu
   /* Enable MAX31855's chip select */
 
   max31855_lock(priv->spi);
-  SPI_SELECT(priv->spi, SPIDEV_TEMPERATURE, true);
+  SPI_SELECT(priv->spi, SPIDEV_TEMPERATURE(priv->devid), true);
 
   /* Read temperature */
 
@@ -211,8 +212,17 @@ static ssize_t max31855_read(FAR struct file *filep, FAR char *buffer, size_t bu
 
   /* Disable MAX31855's chip select */
 
-  SPI_SELECT(priv->spi, SPIDEV_TEMPERATURE, false);
+  SPI_SELECT(priv->spi, SPIDEV_TEMPERATURE(priv->devid), false);
   max31855_unlock(priv->spi);
+
+  /* Detect any errors during SPI transmission */
+
+  if (!(regmsb) || regmsb == -1)
+  {
+    snerr("ERROR: Data transmission failed:\n");
+    snerr("   One or more MAX31855 pins are not properly connected!\n");
+    return -EINVAL;
+  }
 
   regval  = (regmsb & 0xFF000000) >> 24;
   regval |= (regmsb & 0xFF0000) >> 8;
@@ -257,7 +267,7 @@ static ssize_t max31855_read(FAR struct file *filep, FAR char *buffer, size_t bu
           snerr("  The thermocouple input is not connected!\n");
         }
 
-      ret = -EINVAL;
+      return -EINVAL;
     }
 
   /* Return two bytes, the temperature is fixed point Q12.2, then divide by 4
@@ -285,21 +295,22 @@ static ssize_t max31855_write(FAR struct file *filep, FAR const char *buffer,
  * Name: max31855_register
  *
  * Description:
- *   Register the MAX31855 character device as 'devpath'
+ *  This function will register the max31855 driver as /dev/tempN
+ *  where N is the minor device number
  *
  * Input Parameters:
  *   devpath - The full path to the driver to register. E.g., "/dev/temp0"
- *   i2c - An instance of the I2C interface to use to communicate wit
- *   MAX31855 addr - The I2C address of the MAX31855.  The base I2C address
- *   of the MAX31855 is 0x48.  Bits 0-3 can be controlled to get 8 unique
- *   addresses from 0x48 through 0x4f.
+ *   spi     - An instance of the SPI interface to use to communicate with
+ *             MAX31855
+ *   devid   - Minor device number. E.g., 0, 1, 2, etc.
  *
  * Returned Value:
- *   Zero (OK) on success; a negated errno value on failure.
+ *   Zero is returned on success.  Otherwise, a negated errno value is
+ *   returned to indicate the nature of the failure.
  *
  ****************************************************************************/
 
-int max31855_register(FAR const char *devpath, FAR struct spi_dev_s *spi)
+int max31855_register(FAR const char *devpath, FAR struct spi_dev_s *spi, uint16_t devid)
 {
   FAR struct max31855_dev_s *priv;
   int ret;
@@ -319,6 +330,7 @@ int max31855_register(FAR const char *devpath, FAR struct spi_dev_s *spi)
 
   priv->spi        = spi;
   priv->temp       = 0;
+  priv->devid      = devid;
 
   /* Register the character driver */
 
