@@ -219,8 +219,8 @@ static ssize_t max31855_read(FAR struct file *filep, FAR char *buffer, size_t bu
 
   if (!(regmsb) || regmsb == -1)
   {
-    snerr("ERROR: Data transmission failed:\n");
-    snerr("   One or more MAX31855 pins are not properly connected!\n");
+    snerr("ERROR: Data transmission failed on device %d:\n", priv->devid);
+    snerr("  One or more MAX31855 pins are not properly connected!\n\n");
     return -EINVAL;
   }
 
