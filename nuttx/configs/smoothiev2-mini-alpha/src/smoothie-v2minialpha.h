@@ -105,6 +105,13 @@
 #define GPIO_SSP0_MISO GPIO_SSP0_MISO_1
 #define GPIO_SSP0_MOSI GPIO_SSP0_MOSI_1
 
+/* Max31855 Chip Select pins */
+
+#define PINCONFIG_MAX31855_CS1 PINCONF_GPIO6p30
+#define PINCONFIG_MAX31855_CS2 PINCONF_GPIO1p8
+#define GPIO_MAX31855_CS1  (GPIO_MODE_OUTPUT | GPIO_VALUE_ONE | GPIO_PORT6 | GPIO_PIN30)
+#define GPIO_MAX31855_CS2  (GPIO_MODE_OUTPUT | GPIO_VALUE_ONE | GPIO_PORT1 | GPIO_PIN8)
+
 /* We need to redefine USB_PWRD as GPIO to get USB Host working
  * Also remember to add 2 resistors of 15K to D+ and D- pins.
  */
@@ -134,11 +141,29 @@
  * Name: lpc43_sspdev_initialize
  *
  * Description:
- *   Called to configure SPI chip select GPIO pins for the Lincoln 80 board.
+ *   Called to configure SPI chip select GPIO pins for the Smoothie v2 mini-alpha board.
  *
  ****************************************************************************/
 
 void weak_function lpc43_sspdev_initialize(void);
+
+/************************************************************************************
+ * Name: lpc43_max31855initialize
+ *
+ * Description:
+ *   Initialize and register the MAX31855 Temperature Sensor driver.
+ *
+ * Input parameters:
+ *   devpath - The full path to the driver to register.  E.g., "/dev/temp0"
+ *   spi     - An instance of the SPI interface to use to communicate with
+ *             MAX31855
+ *   devid   - Minor device number. E.g., 0, 1, 2, etc.
+ * Returned Value:
+ *   Zero (OK) on success; a negated errno value on failure.
+ *
+ ************************************************************************************/
+
+int lpc43_max31855initialize(FAR const char *devpath, int bus, uint16_t devid);
 
 /************************************************************************************
  * Name: lpc43xx_timerinitialize()

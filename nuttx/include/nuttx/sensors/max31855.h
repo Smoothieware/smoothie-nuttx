@@ -80,6 +80,7 @@ extern "C"
  *   devpath - The full path to the driver to register. E.g., "/dev/temp0"
  *   spi     - An instance of the SPI interface to use to communicate with
  *             MAX31855
+ *   devid   - Minor device number. E.g., 0, 1, 2, etc.
  *
  * Returned Value:
  *   Zero is returned on success.  Otherwise, a negated errno value is
@@ -87,7 +88,7 @@ extern "C"
  *
  ****************************************************************************/
 
-int max31855_register(FAR const char *devpath, FAR struct spi_dev_s *spi);
+int max31855_register(FAR const char *devpath, FAR struct spi_dev_s *spi, uint16_t devid);
 
 #undef EXTERN
 #ifdef __cplusplus

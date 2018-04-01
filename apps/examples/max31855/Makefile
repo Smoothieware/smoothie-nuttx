@@ -1,9 +1,8 @@
 ############################################################################
-# configs/bambino-200e/src/Makefile
+# apps/examples/max31855/Makefile
 #
-#   Copyright (C) 2012 Gregory Nutt. All rights reserved.
-#   Author: Gregory Nutt <gnutt@nuttx.org>
-#           Alan Carvalho de Assis acassis@gmail.com [nuttx] <nuttx@yahoogroups.com>
+#   Copyright (C) 2018 Gregory Nutt. All rights reserved.
+#   Author: Tiago Almeida <tiagojbalmeida@gmail.com>
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -36,67 +35,22 @@
 
 -include $(TOPDIR)/Make.defs
 
+# max31855 built-in application info
+
+CONFIG_EXAMPLES_MAX31855_PRIORITY ?= SCHED_PRIORITY_DEFAULT
+CONFIG_EXAMPLES_MAX31855_STACKSIZE ?= 2048
+
+APPNAME = max31855
+PRIORITY = $(CONFIG_EXAMPLES_MAX31855_PRIORITY)
+STACKSIZE = $(CONFIG_EXAMPLES_MAX31855_STACKSIZE)
+
+# max31855 Example
+
 ASRCS =
-CSRCS = lpc43_boot.c lpc43_ssp.c
+CSRCS =
+MAINSRC = max31855_main.c
 
-ifeq ($(CONFIG_MAX31855),y)
-CSRCS += lpc43_max31855.c
-endif
+CONFIG_EXAMPLES_MAX31855_PROGNAME ?= max31855$(EXEEXT)
+PROGNAME = $(CONFIG_EXAMPLES_MAX31855_PROGNAME)
 
-ifeq ($(CONFIG_LIB_BOARDCTL),y)
-CSRCS += lpc43_appinit.c
-endif
-
-ifeq ($(CONFIG_LPC43_SDMMC),y)
-CSRCS += lpc43_mmcsd.c
-endif
-
-ifeq ($(CONFIG_BAMBINO_HIGHPRI),y)
-CSRCS += lpc43_highpri.c
-endif
-
-ifeq ($(CONFIG_ARCH_FPU),y)
-CSRCS += lpc43_ostest.c
-endif
-
-ifeq ($(CONFIG_ARCH_LEDS),y)
-CSRCS += lpc43_autoleds.c
-else
-CSRCS += lpc43_userleds.c
-endif
-
-ifeq ($(CONFIG_LPC43_ADC0),y)
-CSRCS += lpc43_adc.c
-endif
-
-ifeq ($(CONFIG_ARCH_BUTTONS),y)
-CSRCS += lpc43_buttons.c
-endif
-
-ifeq ($(CONFIG_TIMER),y)
-CSRCS += lpc43_timer.c
-endif
-
-ifeq ($(CONFIG_USBMSC),y)
-CSRCS += lpc43_usbmsc.c
-endif
-
-ifeq ($(CONFIG_SPIFI_LIBRARY),y)
-CFLAGS += -DEUROBIRD
-SPIFI_LIB = spifi_lib
-CSRCS += $(SPIFI_LIB)/spifi_rom_api.c
-#CSRCS += $(SPIFI_LIB)/amic.c
-#CSRCS += $(SPIFI_LIB)/atmel.c
-#CSRCS += $(SPIFI_LIB)/chi.c
-#CSRCS += $(SPIFI_LIB)/eon.c
-#CSRCS += $(SPIFI_LIB)/esmt.c
-#CSRCS += $(SPIFI_LIB)/esmt.c
-#CSRCS += $(SPIFI_LIB)/giga.c
-#CSRCS += $(SPIFI_LIB)/macronix.c
-#CSRCS += $(SPIFI_LIB)/numonyx.c
-CSRCS += $(SPIFI_LIB)/spansion.c
-#CSRCS += $(SPIFI_LIB)/sst.c
-CSRCS += $(SPIFI_LIB)/winbond.c
-endif
-
-include $(TOPDIR)/configs/Board.mk
+include $(APPDIR)/Application.mk
